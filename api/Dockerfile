@@ -18,14 +18,17 @@ ENV PATH=$PATH:/home/app/.local/bin
 #COPY --chown=app:app ./ /src
 COPY ./ /src
 
+#Changing directory permissions and ownership
 RUN chown -R app:app /src
 RUN chmod u+rw,g=r -R /src
 
+
+##Changing user APP location to avoid permissions erros
 USER app
 
 WORKDIR /src
 
-##Changing user APP location to avoid permissions erros
+
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
