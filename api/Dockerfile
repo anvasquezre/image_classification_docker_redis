@@ -25,6 +25,8 @@ USER app
 
 WORKDIR /src
 
+##Changing user APP location to avoid permissions erros
+
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 FROM base as test

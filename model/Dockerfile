@@ -28,7 +28,9 @@ RUN chmod u+rw,g=r -R /src
 
 
 WORKDIR /src
-##Changing user APP location
+
+##Changing user APP location to avoid permissions erros
+
 USER app
 
 FROM base as test
