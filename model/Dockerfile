@@ -26,8 +26,9 @@ COPY . /src
 RUN chown -R app:app /src
 RUN chmod u+rw,g=r -R /src
 
-WORKDIR /src
 
+WORKDIR /src
+##Changing user APP location
 USER app
 
 FROM base as test

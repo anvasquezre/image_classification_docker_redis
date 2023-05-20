@@ -25,7 +25,6 @@ USER app
 
 WORKDIR /src
 
-
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 FROM base as test
