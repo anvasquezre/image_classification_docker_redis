@@ -3,7 +3,6 @@ services:
   api:
     user: ${UID}:${GID}
     image: ml_api
-    container_name: ml_api
     build:
       args:
         - UID=${UID}
@@ -25,11 +24,9 @@ services:
 
   redis:
     image: redis:latest
-    container_name: redis
 
   model:
     user: ${UID}:${GID}
-    container_name: ml_services
     image: ml_services
     build:
       args:
