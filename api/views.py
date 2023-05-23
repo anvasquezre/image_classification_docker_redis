@@ -26,45 +26,56 @@ def index():
     When it receives an image from the UI, it also calls our ML model to
     get and display the predictions.
     """
+
     if request.method == "GET":
         return render_template("index.html")
 
     if request.method == "POST":
-        # No file received, show basic UI
-        if "file" not in request.files:
+        context = []
+        filenames = []
+        images = request.files.getlist('file')#convert multidict to dict
+        if images:
+            for file in images:     #iterate over all te images in the list 
+                # No file received, show basic UI
+                if not file:
+                    flash("No file part")
+                    return redirect(request.url)
+
+                # File received but no filename is provided, show basic UI
+                if file.filename == "":
+                    flash("No images selected for uploading")
+                    return redirect(request.url)
+
+                # File received and it's an image, we must show it and get predictions
+                if file and utils.allowed_file(file.filename):
+                    # In order to correctly display the image in the UI and get model
+                    # predictions you should implement the following:
+                    #   1. Get an unique file name using utils.get_file_hash() function
+                    #   2. Store the image to disk using the new name
+                    #   3. Send the file to be processed by the `model` service
+                    #   4. Update `context` dict with the corresponding values
+                    file_hash = utils.get_file_hash(file)
+                    dst_filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], file_hash)
+                    if not os.path.exists(dst_filepath):
+                        file.save(dst_filepath)
+                    flash("Image successfully uploaded and displayed below")
+                    prediction, score = model_predict(file_hash)
+                    context.append({
+                        "prediction": prediction,
+                        "score": score,
+                        "filename": file_hash,
+                    })
+                    filenames.append(file_hash)
+                    
+                # File received and but it isn't an image
+                else:
+                    flash("Allowed image types are -> png, jpg, jpeg, gif")
+                    return redirect(request.url)
+        else:
             flash("No file part")
             return redirect(request.url)
+        return render_template("index.html", filename=filenames, context=context)
 
-        # File received but no filename is provided, show basic UI
-        file = request.files["file"]
-        if file.filename == "":
-            flash("No image selected for uploading")
-            return redirect(request.url)
-
-        # File received and it's an image, we must show it and get predictions
-        if file and utils.allowed_file(file.filename):
-            # In order to correctly display the image in the UI and get model
-            # predictions you should implement the following:
-            #   1. Get an unique file name using utils.get_file_hash() function
-            #   2. Store the image to disk using the new name
-            #   3. Send the file to be processed by the `model` service
-            #   4. Update `context` dict with the corresponding values
-            file_hash = utils.get_file_hash(file)
-            dst_filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], file_hash)
-            if not os.path.exists(dst_filepath):
-                file.save(dst_filepath)
-            flash("Image successfully uploaded and displayed below")
-            prediction, score = model_predict(file_hash)
-            context = {
-                "prediction": prediction,
-                "score": score,
-                "filename": file_hash,
-            }
-            return render_template("index.html", filename=file_hash, context=context)
-        # File received and but it isn't an image
-        else:
-            flash("Allowed image types are -> png, jpg, jpeg, gif")
-            return redirect(request.url)
 
 
 @router.route("/display/<filename>")
