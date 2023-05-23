@@ -5,12 +5,11 @@ from uuid import uuid4
 import redis
 import settings
 
-
 # Connect to Redis and assign to variable `db``
 # Make use of settings.py module to get Redis settings like host, port, etc.
-db = redis.Redis(db = settings.REDIS_DB_ID,
-                host = settings.REDIS_IP,
-                port = settings.REDIS_PORT)
+db = redis.Redis(
+    db=settings.REDIS_DB_ID, host=settings.REDIS_IP, port=settings.REDIS_PORT
+)
 
 
 def model_predict(image_name):
@@ -42,15 +41,15 @@ def model_predict(image_name):
     #    "id": str,
     #    "image_name": str,
     # }
-    
+
     msg = {
-    "id": job_id,
-    "image_name": image_name,
+        "id": job_id,
+        "image_name": image_name,
     }
     job_data = json.dumps(msg)
     # Send the job to the model service using Redis
 
-    db.lpush(settings.REDIS_QUEUE,job_data)
+    db.lpush(settings.REDIS_QUEUE, job_data)
 
     # Loop until we received the response from our ML model
     while True:

@@ -33,9 +33,9 @@ def index():
     if request.method == "POST":
         context = []
         filenames = []
-        images = request.files.getlist('file')#convert multidict to dict
+        images = request.files.getlist("file")  # convert multidict to dict
         if images:
-            for file in images:     #iterate over all te images in the list 
+            for file in images:  # iterate over all te images in the list
                 # No file received, show basic UI
                 if not file:
                     flash("No file part")
@@ -55,18 +55,22 @@ def index():
                     #   3. Send the file to be processed by the `model` service
                     #   4. Update `context` dict with the corresponding values
                     file_hash = utils.get_file_hash(file)
-                    dst_filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], file_hash)
+                    dst_filepath = os.path.join(
+                        current_app.config["UPLOAD_FOLDER"], file_hash
+                    )
                     if not os.path.exists(dst_filepath):
                         file.save(dst_filepath)
                     flash("Image successfully uploaded and displayed below")
                     prediction, score = model_predict(file_hash)
-                    context.append({
-                        "prediction": prediction,
-                        "score": score,
-                        "filename": file_hash,
-                    })
+                    context.append(
+                        {
+                            "prediction": prediction,
+                            "score": score,
+                            "filename": file_hash,
+                        }
+                    )
                     filenames.append(file_hash)
-                    
+
                 # File received and but it isn't an image
                 else:
                     flash("Allowed image types are -> png, jpg, jpeg, gif")
@@ -75,7 +79,6 @@ def index():
             flash("No file part")
             return redirect(request.url)
         return render_template("index.html", filename=filenames, context=context)
-
 
 
 @router.route("/display/<filename>")
@@ -158,15 +161,14 @@ def feedback():
     """
     # Store the reported data to a file on the corresponding path
     # already provided in settings.py module (settings.FEEDBACK_FILEPATH)
-    report=None
+    report = None
     if request.method == "POST":
         report = request.form.get("report")
     # If report exists, save it to the file.
-    
+
     if report:
-        with open(settings.FEEDBACK_FILEPATH,"a") as file:
+        with open(settings.FEEDBACK_FILEPATH, "a") as file:
             file.write(str(report + "\n"))
-        
 
     # Don't change this line
     return render_template("index.html")

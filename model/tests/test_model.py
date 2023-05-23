@@ -1,5 +1,7 @@
 import unittest
+
 import ml_service
+
 
 class TestMLService(unittest.TestCase):
     def test_predict(self):

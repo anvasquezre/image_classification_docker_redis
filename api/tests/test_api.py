@@ -48,7 +48,7 @@ class TestIntegration(TestCase):
         import settings
 
         # Check current status for feedback folder
-        #settings.FEEDBACK_FILEPATH = 'tests/feedback'
+        # settings.FEEDBACK_FILEPATH = 'tests/feedback'
         if os.path.exists(settings.FEEDBACK_FILEPATH):
             curr_feedback_lines = len(
                 open(settings.FEEDBACK_FILEPATH).read().splitlines()

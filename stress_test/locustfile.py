@@ -7,7 +7,6 @@ class APIUser(HttpUser):
     @task
     def index(self):
         self.client.get("/")
-        
 
     @task
     def feedback(self):
@@ -30,4 +29,3 @@ class APIUser(HttpUser):
             files=files,
             headers=headers,
         )
-
