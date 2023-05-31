@@ -23,7 +23,7 @@ db = redis.Redis(
 model = ResNet50(include_top=True, weights="imagenet")
 
 
-def predict(image_name):
+def predict(image_list):
     """
     Load image from the corresponding folder based on the image name
     received, then, run our ML model to get predictions.
@@ -39,31 +39,37 @@ def predict(image_name):
         Model predicted class as a string and the corresponding confidence
         score as a number.
     """
-    # Loading the image from UPLOAD_FOLDER
-    img = image.load_img(
-        f"{settings.UPLOAD_FOLDER}/{image_name}", target_size=(224, 224)
-    )
-
-    # Preprocessing
-
-    x = image.img_to_array(img)
-
-    x_batch = np.expand_dims(x, axis=0)
-
+    #Initializing empty array of dims len(image_list,224,224)
+    arrays_of_images = np.zeros((len(image_list),224,224,3))
+    
+    for number,image_name in enumerate(image_list,start=0):
+        # Loading the image from UPLOAD_FOLDER
+        img = image.load_img(
+            f"{settings.UPLOAD_FOLDER}/{image_name}", target_size=(224, 224)
+        )
+        # Preprocessing
+        x = image.img_to_array(img)
+        arrays_of_images[number] = x
+    
+    
     ## Scaling pixel values to 0-1
-
-    x_batch = preprocess_input(x_batch)
+    x_batch = preprocess_input(arrays_of_images)
 
     # Making the prediction
 
     preds = model.predict(x_batch)
 
     # Decoding the prediction to get top1 probability
-    _, class_name, pred_probability = decode_predictions(preds, top=1)[0][
-        0
-    ]  # Only 1 image, thus index 0
-
-    return class_name, round(pred_probability, 4)
+    preds_decoded = decode_predictions(preds, top=1)  # Batch of images even when just 1 image
+    
+    class_pred_list = []
+    pred_proba_list = []
+    for pred in preds_decoded:
+        _, class_name, pred_probability = pred[0]
+        class_pred_list.append(class_name)
+        pred_proba_list.append(round(pred_probability, 4))
+        
+    return class_pred_list, pred_proba_list
 
 
 def classify_process():
@@ -93,32 +99,44 @@ def classify_process():
         #       code with Redis making use of functions `brpop()` and `set()`.
 
         # Checking the queue with name settings.REDIS_QUEUE
-        data = db.brpop(settings.REDIS_QUEUE, timeout=5)
-
+        data = db.rpop(settings.REDIS_QUEUE, count=20)
+        
         # Converting the JSON from job_data to a Dict
         if data:
-            _, job_data = data
-            msg = json.loads(job_data)
+            jobid_list = []
+            jobimg_list = []
+            
+            #Creates a list of jobs and its names
+            for job in data:
+                #Loads data as dict
+                msg = json.loads(job)
 
-            # If both exists, then predict
+                # If both exists, then predict
 
-            image_name, job_id = msg["image_name"], msg["id"]
-            if (image_name, job_id) is not None:
-                class_name, pred_probability = predict(image_name)
-            else:
-                print("Something went wrong, please try again")
-            # Sending results to redis hashtable
+                image_name, job_id = msg["image_name"], msg["id"]
+                if (image_name, job_id) is not None:
+                    jobid_list.append(job_id)
+                    jobimg_list.append(image_name)
 
-            msg_content = {
-                "prediction": class_name,
-                "score": eval(str(pred_probability)),
-            }
+                else:
+                    print("Something went wrong with one job id, please try again")
+                # Sending results to redis hashtable
 
-            # Turning msg content into a JSON
-            prediction_content = json.dumps(msg_content)
+            if len(jobimg_list) > 0:
+                class_pred_list, pred_proba_list = predict(jobimg_list)
+                
+                ##Send back inidvidual jobs to hash table
+                for class_name, pred_probability,job_id in zip(class_pred_list, pred_proba_list,jobid_list):
+                    msg_content = {
+                        "prediction": class_name,
+                        "score": eval(str(pred_probability)),
+                    }
 
-            # Sending the message
-            db.set(job_id, prediction_content)
+                    # Turning msg content into a JSON
+                    prediction_content = json.dumps(msg_content)
+
+                    # Sending the message
+                    db.set(job_id, prediction_content)
 
         # Sleep for a bit
         time.sleep(settings.SERVER_SLEEP)
@@ -126,5 +144,5 @@ def classify_process():
 
 if __name__ == "__main__":
     # Now launch process
-    print("Launching ML service...")
+    print("Launching ML service with Batch processing enabled. Batch up to 20 images...")
     classify_process()

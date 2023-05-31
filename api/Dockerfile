@@ -36,4 +36,4 @@ FROM base as test
 RUN ["pytest", "-v", "/src/tests"]
 
 FROM base as build
-ENTRYPOINT ["gunicorn", "--workers=8", "--bind", "0.0.0.0:5000", "app:app"]
+ENTRYPOINT ["gunicorn", "--workers=8","--bind" ,"0.0.0.0:5000", "app:app"]
